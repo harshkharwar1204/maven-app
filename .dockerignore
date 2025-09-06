@@ -1,0 +1,24 @@
+# Maven build output
+target
+
+# IDE files
+.idea
+*.iml
+.project
+.classpath
+.settings
+.vscode
+
+# Git
+.git
+.gitignore
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# Node/Web (if present)
+node_modules
+npm-debug.log
+yarn.lock
+pnpm-lock.yaml

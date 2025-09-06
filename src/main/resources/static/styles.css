@@ -1,0 +1,10 @@
+body {
+    font-family: 'Inter', sans-serif;
+}
+/* Ensure rounded corners on all elements as per instructions */
+.rounded-lg, .rounded-md, .rounded-tl-lg, .rounded-tr-lg {
+    border-radius: 0.5rem; /* Or specific values as needed for different elements */
+}
+input, textarea, button, table, th, td {
+    border-radius: 0.375rem; /* Apply to form elements and table cells */
+}
