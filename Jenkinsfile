@@ -136,7 +136,7 @@ pipeline {
         }
 
         stage('Archive Artifacts') {
-            agent any
+            agent { label 'builder' }  // Change from 'agent any' to 'agent { label 'builder' }'
             steps {
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
