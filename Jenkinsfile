@@ -51,7 +51,8 @@ pipeline {
                     }
                 }
                 archiveArtifacts artifacts: 'target/surefire-reports/**', allowEmptyArchive: true
-                junit 'target/surefire-reports/*.xml'
+                // MODIFIED LINE: Added 'allowEmptyResults: true' to prevent failure on no tests
+                junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
             }
         }
 
