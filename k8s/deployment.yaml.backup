@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: retail-app
-          image: kharwarharsh1204/crudapp:latest
+          image: crudapp:latest
           ports:
             - containerPort: 8081
           resources:
