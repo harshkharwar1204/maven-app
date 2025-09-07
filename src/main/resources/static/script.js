@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8081/api/products';
+const API_BASE_URL = window.location.origin + '/api/products';
 
 const productForm = document.getElementById('productForm');
 const productIdInput = document.getElementById('productId');

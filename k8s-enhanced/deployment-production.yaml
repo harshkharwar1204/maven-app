@@ -1,0 +1,67 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: retail-app
+  namespace: retail
+  labels:
+    app: retail-app
+    version: v2
+    tier: production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: retail-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: retail-app
+        version: v2
+        tier: production
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+    spec:
+      containers:
+        - name: retail-app
+          image: kharwarharsh1204/crudapp:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+              name: http
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms128m -Xmx256m -XX:+UseG1GC"
+            - name: SPRING_PROFILES_ACTIVE
+              value: "production"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+      terminationGracePeriodSeconds: 30

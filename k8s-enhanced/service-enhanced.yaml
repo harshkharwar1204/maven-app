@@ -1,0 +1,34 @@
+﻿apiVersion: v1
+kind: Service
+metadata:
+  name: retail-app-svc
+  namespace: retail
+  labels:
+    app: retail-app
+    tier: production
+spec:
+  selector:
+    app: retail-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8081
+      protocol: TCP
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: retail-app-internal
+  namespace: retail
+  labels:
+    app: retail-app
+    type: internal
+spec:
+  selector:
+    app: retail-app
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+  type: ClusterIP
