@@ -57,10 +57,10 @@ function renderProducts(products) {
     products.forEach(product => {
         const row = `
             <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${product.id}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${product.name}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.description}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$${product.price.toFixed(2)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-300">${product.id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${product.name}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${product.description}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">$${product.price.toFixed(2)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                     <button onclick="editProduct(${product.id})"
                             class="px-4 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
