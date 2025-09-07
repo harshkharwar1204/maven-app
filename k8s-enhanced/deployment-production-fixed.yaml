@@ -50,16 +50,18 @@ spec:
             httpGet:
               path: /actuator/health
               port: 8081
-            initialDelaySeconds: 30
+            initialDelaySeconds: 120  # Changed from 30 to 120 seconds
             periodSeconds: 10
             failureThreshold: 3
+            timeoutSeconds: 5         # Added timeout
           livenessProbe:
             httpGet:
               path: /actuator/health
               port: 8081
-            initialDelaySeconds: 60
+            initialDelaySeconds: 150  # Changed from 60 to 150 seconds  
             periodSeconds: 15
             failureThreshold: 5
+            timeoutSeconds: 5         # Added timeout
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
