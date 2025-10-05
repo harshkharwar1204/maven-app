@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-deployment
+  namespace: retail
+  labels:
+    app: mongodb
+    tier: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+        tier: database
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:7.0
+        ports:
+        - containerPort: 27017
+          name: mongodb
+        env:
+        # Root username from secret
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: mongo-root-username
+        
+        # Root password from secret
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: mongo-root-password
+        
+        # Database name from configmap
+        - name: MONGO_INITDB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: mongodb-configmap
+              key: database_name
+        
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        volumeMounts:
+        - name: mongodb-storage
+          mountPath: /data/db
+        
+        # Liveness probe - simple TCP check to MongoDB port
+        livenessProbe:
+          tcpSocket:
+            port: 27017
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # Readiness probe - simple TCP check to MongoDB port
+        readinessProbe:
+          tcpSocket:
+            port: 27017
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      
+      volumes:
+      - name: mongodb-storage
+        emptyDir: {}
+        # For production, use PersistentVolumeClaim:
+        # persistentVolumeClaim:
+        #   claimName: mongodb-pvc

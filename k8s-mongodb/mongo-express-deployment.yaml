@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-express-deployment
+  namespace: retail
+  labels:
+    app: mongo-express
+    tier: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo-express
+  template:
+    metadata:
+      labels:
+        app: mongo-express
+        tier: frontend
+    spec:
+      containers:
+      - name: mongo-express
+        image: mongo-express:1.0.2
+        ports:
+        - containerPort: 8081
+          name: http
+        env:
+        # Connection URL used by this image version
+        - name: ME_CONFIG_MONGODB_URL
+          value: "mongodb://admin:P@ssw0rd123@mongodb-service:27017"
+        
+        # Mongo Express basic auth (optional but recommended)
+        - name: ME_CONFIG_BASICAUTH_USERNAME
+          value: "admin"
+        
+        - name: ME_CONFIG_BASICAUTH_PASSWORD
+          value: "express123"
+        
+        # Site settings
+        - name: ME_CONFIG_SITE_BASEURL
+          value: "/"
+        
+        - name: ME_CONFIG_SITE_COOKIESECRET
+          value: "changeme"
+        
+        - name: ME_CONFIG_SITE_SESSIONSECRET
+          value: "changeme"
+        
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        
+        # Readiness probe - checks if Mongo Express is ready
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Liveness probe - checks if Mongo Express is alive
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
