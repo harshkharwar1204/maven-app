@@ -1,0 +1,623 @@
+# ============================================
+# PROJECT 8: 4 MICROSERVICES ARCHITECTURE
+# ============================================
+# Microservices:
+# 1. Product Service (Core CRUD)
+# 2. User Service (User Management)
+# 3. Order Service (Order Processing)
+# 4. API Gateway (Entry Point)
+# ============================================
+
+---
+# NAMESPACE
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: microservices
+  labels:
+    environment: production
+    project: retail-microservices
+
+---
+# ============================================
+# 1. PRODUCT SERVICE
+# ============================================
+
+# Product Service ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: product-service-config
+  namespace: microservices
+data:
+  SERVICE_NAME: "product-service"
+  SERVICE_PORT: "8081"
+  DATABASE_NAME: "productdb"
+  LOG_LEVEL: "INFO"
+  SPRING_PROFILES_ACTIVE: "production"
+  ACTUATOR_ENDPOINTS: "health,info,metrics"
+
+---
+# Product Service Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: product-service-secret
+  namespace: microservices
+type: Opaque
+data:
+  # Username: productadmin (base64: cHJvZHVjdGFkbWlu)
+  # Password: Prod@123 (base64: UHJvZEAxMjM=)
+  DB_USERNAME: cHJvZHVjdGFkbWlu
+  DB_PASSWORD: UHJvZEAxMjM=
+  JWT_SECRET: cHJvZHVjdC1zZXJ2aWNlLWp3dC1zZWNyZXQtMjAyNQ==
+
+---
+# Product Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: microservices
+  labels:
+    app: product-service
+    tier: backend
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: product-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: product-service
+        tier: backend
+        version: v1
+    spec:
+      containers:
+      - name: product-service
+        image: kharwarharsh1204/crudapp:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8081
+          name: http
+        env:
+        - name: SERVICE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: product-service-config
+              key: SERVICE_NAME
+        - name: SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: product-service-config
+              key: SERVICE_PORT
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: product-service-config
+              key: SPRING_PROFILES_ACTIVE
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: product-service-secret
+              key: DB_USERNAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: product-service-secret
+              key: DB_PASSWORD
+        - name: JAVA_OPTS
+          value: "-Xms256m -Xmx512m -XX:+UseG1GC"
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8081
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          failureThreshold: 3
+
+---
+# Product Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: microservices
+  labels:
+    app: product-service
+spec:
+  selector:
+    app: product-service
+  type: ClusterIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8081
+    targetPort: 8081
+
+---
+# ============================================
+# 2. USER SERVICE
+# ============================================
+
+# User Service ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-service-config
+  namespace: microservices
+data:
+  SERVICE_NAME: "user-service"
+  SERVICE_PORT: "8082"
+  DATABASE_NAME: "userdb"
+  LOG_LEVEL: "INFO"
+  SPRING_PROFILES_ACTIVE: "production"
+  SESSION_TIMEOUT: "3600"
+  ACTUATOR_ENDPOINTS: "health,info,metrics"
+
+---
+# User Service Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: user-service-secret
+  namespace: microservices
+type: Opaque
+data:
+  # Username: useradmin (base64: dXNlcmFkbWlu)
+  # Password: User@123 (base64: VXNlckAxMjM=)
+  DB_USERNAME: dXNlcmFkbWlu
+  DB_PASSWORD: VXNlckAxMjM=
+  JWT_SECRET: dXNlci1zZXJ2aWNlLWp3dC1zZWNyZXQtMjAyNQ==
+  API_KEY: dXNlci1hcGkta2V5LXNlY3VyZS0yMDI1
+
+---
+# User Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: microservices
+  labels:
+    app: user-service
+    tier: backend
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: user-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: user-service
+        tier: backend
+        version: v1
+    spec:
+      containers:
+      - name: user-service
+        image: kharwarharsh1204/crudapp:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8082
+          name: http
+        env:
+        - name: SERVICE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: user-service-config
+              key: SERVICE_NAME
+        - name: SERVER_PORT
+          value: "8082"
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: user-service-config
+              key: SPRING_PROFILES_ACTIVE
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: user-service-secret
+              key: DB_USERNAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: user-service-secret
+              key: DB_PASSWORD
+        - name: JAVA_OPTS
+          value: "-Xms256m -Xmx512m -XX:+UseG1GC"
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8082
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8082
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          failureThreshold: 3
+
+---
+# User Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: microservices
+  labels:
+    app: user-service
+spec:
+  selector:
+    app: user-service
+  type: ClusterIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8082
+    targetPort: 8082
+
+---
+# ============================================
+# 3. ORDER SERVICE
+# ============================================
+
+# Order Service ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-service-config
+  namespace: microservices
+data:
+  SERVICE_NAME: "order-service"
+  SERVICE_PORT: "8083"
+  DATABASE_NAME: "orderdb"
+  LOG_LEVEL: "INFO"
+  SPRING_PROFILES_ACTIVE: "production"
+  PRODUCT_SERVICE_URL: "http://product-service:8081"
+  USER_SERVICE_URL: "http://user-service:8082"
+  ACTUATOR_ENDPOINTS: "health,info,metrics"
+  ORDER_PROCESSING_TIMEOUT: "30000"
+
+---
+# Order Service Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: order-service-secret
+  namespace: microservices
+type: Opaque
+data:
+  # Username: orderadmin (base64: b3JkZXJhZG1pbg==)
+  # Password: Order@123 (base64: T3JkZXJAMTIz)
+  DB_USERNAME: b3JkZXJhZG1pbg==
+  DB_PASSWORD: T3JkZXJAMTIz
+  JWT_SECRET: b3JkZXItc2VydmljZS1qd3Qtc2VjcmV0LTIwMjU=
+  PAYMENT_API_KEY: cGF5bWVudC1hcGkta2V5LXNlY3VyZS0yMDI1
+
+---
+# Order Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: microservices
+  labels:
+    app: order-service
+    tier: backend
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: order-service
+        tier: backend
+        version: v1
+    spec:
+      containers:
+      - name: order-service
+        image: kharwarharsh1204/crudapp:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8083
+          name: http
+        env:
+        - name: SERVICE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: order-service-config
+              key: SERVICE_NAME
+        - name: SERVER_PORT
+          value: "8083"
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: order-service-config
+              key: SPRING_PROFILES_ACTIVE
+        - name: PRODUCT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: order-service-config
+              key: PRODUCT_SERVICE_URL
+        - name: USER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: order-service-config
+              key: USER_SERVICE_URL
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: order-service-secret
+              key: DB_USERNAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: order-service-secret
+              key: DB_PASSWORD
+        - name: PAYMENT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: order-service-secret
+              key: PAYMENT_API_KEY
+        - name: JAVA_OPTS
+          value: "-Xms256m -Xmx512m -XX:+UseG1GC"
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8083
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8083
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          failureThreshold: 3
+
+---
+# Order Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: microservices
+  labels:
+    app: order-service
+spec:
+  selector:
+    app: order-service
+  type: ClusterIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8083
+    targetPort: 8083
+
+---
+# ============================================
+# 4. API GATEWAY SERVICE
+# ============================================
+
+# API Gateway ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-config
+  namespace: microservices
+data:
+  SERVICE_NAME: "api-gateway"
+  SERVICE_PORT: "8080"
+  LOG_LEVEL: "INFO"
+  SPRING_PROFILES_ACTIVE: "production"
+  PRODUCT_SERVICE_URL: "http://product-service:8081"
+  USER_SERVICE_URL: "http://user-service:8082"
+  ORDER_SERVICE_URL: "http://order-service:8083"
+  GATEWAY_TIMEOUT: "30000"
+  CORS_ALLOWED_ORIGINS: "*"
+  RATE_LIMIT_ENABLED: "true"
+  RATE_LIMIT_CAPACITY: "100"
+
+---
+# API Gateway Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-gateway-secret
+  namespace: microservices
+type: Opaque
+data:
+  # JWT Secret for Gateway
+  JWT_SECRET: Z2F0ZXdheS1qd3Qtc2VjcmV0LWtleS0yMDI1
+  # Admin API Key
+  ADMIN_API_KEY: Z2F0ZXdheS1hZG1pbi1hcGkta2V5LTIwMjU=
+  # Service-to-Service Auth
+  INTERNAL_API_KEY: aW50ZXJuYWwtc2VydmljZS1hdXRoLWtleS0yMDI1
+
+---
+# API Gateway Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: microservices
+  labels:
+    app: api-gateway
+    tier: frontend
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api-gateway
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 2
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+        tier: frontend
+        version: v1
+    spec:
+      containers:
+      - name: api-gateway
+        image: kharwarharsh1204/crudapp:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: SERVICE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: api-gateway-config
+              key: SERVICE_NAME
+        - name: SERVER_PORT
+          value: "8080"
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: api-gateway-config
+              key: SPRING_PROFILES_ACTIVE
+        - name: PRODUCT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: api-gateway-config
+              key: PRODUCT_SERVICE_URL
+        - name: USER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: api-gateway-config
+              key: USER_SERVICE_URL
+        - name: ORDER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: api-gateway-config
+              key: ORDER_SERVICE_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: api-gateway-secret
+              key: JWT_SECRET
+        - name: ADMIN_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-gateway-secret
+              key: ADMIN_API_KEY
+        - name: JAVA_OPTS
+          value: "-Xms256m -Xmx512m -XX:+UseG1GC"
+        resources:
+          requests:
+            cpu: "300m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          failureThreshold: 3
+
+---
+# API Gateway Service (External Access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: microservices
+  labels:
+    app: api-gateway
+spec:
+  selector:
+    app: api-gateway
+  type: LoadBalancer
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+
+---
+# API Gateway Internal Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway-internal
+  namespace: microservices
+  labels:
+    app: api-gateway
+spec:
+  selector:
+    app: api-gateway
+  type: ClusterIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8080
+    targetPort: 8080
